@@ -84,7 +84,27 @@ public:
 
     void displayScore() {
         lcd.locate(0, 1);
-        lcd.printf("S%d ", score);  // extra space clears old digits
+        lcd.printf("S%d ", score);  
+    }
+
+    void drawHUD(){
+        //display score
+        lcd.locate(0, 1);
+        lcd.printf("S%d ", score);  
+
+        //display health
+        lcd.locate(0, 0);
+        lcd.putc(heart_n);          // custom heart character
+        lcd.locate(1, 0);
+        lcd.printf("%d ", lives);   
+
+        //display borders
+        lcd.locate(11,0); lcd.putc(border_n);
+        lcd.locate(11,1); lcd.putc(border_n);
+        lcd.locate(2,0); lcd.putc(border_n);;
+        lcd.locate(2,1); lcd.putc(border_n);
+
+
     }
 };
 
@@ -119,8 +139,16 @@ public:
         lcd.putc(symbol);
     }
 
+    //moves ship row
     void toggleRow() {
         moveTo(x, 1 - y);
+    }
+
+    //removes entity for when astroid or number is shot
+    void clearEnt(){
+        lcd.locate(x,y);
+        lcd.printf(" ");
+
     }
 };
 
@@ -128,9 +156,12 @@ public:
 
 Game game;
 
-Entity ship(4, 0, ship_n);
-Entity border1(11, 0, border_n);
-Entity border2(11, 1, border_n);
+Entity ship(3, 0, ship_n);
+
+//U for top spawning astroid, D for bottom spawning astroid
+Entity Uastroid(10,0,astroid_n);
+Entity Dastroid(10,1,astroid_n);
+
 // ---------------- FUNCTIONS ----------------
 
 void WaitForPress() {
@@ -164,22 +195,19 @@ void menu() {
 }
 
 void initialise_game() {
-    lcd.cls();
-
-    // load custom chars
+    //loading custom characters onto LCD memory
     lcd.writeCustomCharacter(shipChar, ship_n + 1);
     lcd.writeCustomCharacter(heartChar, heart_n + 1);
     lcd.writeCustomCharacter(astroidChar, astroid_n + 1);
     lcd.writeCustomCharacter(borderChar, border_n + 1);
 
-    // draw static stuff
-    border1.draw();
-    border2.draw();
-    ship.draw();
+    lcd.cls();
 
-    // draw HUD
-    game.displayHealth();
-    game.displayScore();
+    ship.draw();
+    //draws borders, score, health
+    game.drawHUD();
+
+
 }
 
 void handleInput() {
@@ -204,10 +232,7 @@ void updateGame() {
     // - generate questions/answers
 }
 
-void drawHud() {
-    game.displayHealth();
-    game.displayScore();
-}
+
 
 // ---------------- MAIN ----------------
 
@@ -218,7 +243,6 @@ int main() {
     while (true) {
         handleInput();
         updateGame();
-        drawHud();
 
         ThisThread::sleep_for(100ms);
     }
