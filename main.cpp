@@ -10,6 +10,9 @@ DigitalIn Rbtn(D9, PullUp);
 Timer shotTimer;
 Timer ammoTimer;
 
+bool lastLbtn = true;
+bool lastRbtn = true;
+
 constexpr auto AMMO_REGEN_DELAY = 1500ms;   // 1 second per ammo
 
 // ---------------- CUSTOM CHARACTERS ----------------
@@ -263,17 +266,21 @@ void initialise_game() {
 }
 
 void handleInput() {
-    // Right button = move ship up/down
-    if (Rbtn.read() == 0) {
+    bool currentL = Lbtn.read();
+    bool currentR = Rbtn.read();
+
+    // Right button: only act on new press
+    if (lastRbtn == true && currentR == false) {
         ship.toggleRow();
-        WaitForRelease();
     }
 
-    // Left button = shoot hook for later
-    if (Lbtn.read() == 0) {
+    // Left button: only act on new press
+    if (lastLbtn == true && currentL == false) {
         fireShot();
-        WaitForRelease();
     }
+
+    lastLbtn = currentL;
+    lastRbtn = currentR;
 }
 
 void updateGame() {
@@ -295,8 +302,9 @@ void updateGame() {
 
     // TODO:
     // - move asteroids and handle astroid collisions 
-    // - create a ammo regen timed function 
     // - generate questions/answers + add correct answer logic 
+
+    
 }
 
 
