@@ -8,6 +8,9 @@ DigitalIn Lbtn(D8, PullUp);
 DigitalIn Rbtn(D9, PullUp);
 
 Timer shotTimer;
+Timer ammoTimer;
+
+constexpr auto AMMO_REGEN_DELAY = 1500ms;   // 1 second per ammo
 
 // ---------------- CUSTOM CHARACTERS ----------------
 
@@ -22,6 +25,9 @@ int astroid_n = 2;
 
 char borderChar[] = {0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04};
 int border_n = 3;
+
+char ammoChar[] = {0x00, 0x04, 0x0A, 0x0A, 0x0A, 0x0A, 0x0E, 0x0E};
+int ammo_n = 4;
 
 // ---------------- CLASSES ----------------
 class Entity {
@@ -78,6 +84,7 @@ public:
     int lives = 3;
     int score = 0;
     int answer = 0;
+    int ammo = 4;
 
     void HealthLoss() {
         lives--;
@@ -95,7 +102,27 @@ public:
         lcd.putc(heart_n);          // custom heart character
         lcd.locate(1, 0);
         lcd.printf("%d ", lives);   // extra space clears old digits
+
+
     }
+
+
+    void useAmmo() {
+        if (ammo > 0) {
+            ammo--;
+            displayAmmo();
+        }
+    }
+    void displayAmmo() {
+    for (int i = 0; i < 4; i++) {
+        lcd.locate(12 + i, 1);
+        if (i < ammo) {
+            lcd.putc(ammo_n);
+        } else {
+            lcd.putc(' ');
+        }
+    }
+}
 
     void displayScore() {
         lcd.locate(0, 1);
@@ -119,11 +146,14 @@ public:
         lcd.locate(2,0); lcd.putc(border_n);;
         lcd.locate(2,1); lcd.putc(border_n);
 
+        //display ammo
+        displayAmmo();
+
 
     }
 
     //moves shot until end of play area
-    void updateShot(Entity& shot){
+    void updateShot(Entity& shot) {
         if (!shot.active) return;
 
         shot.clearEnt();
@@ -135,7 +165,7 @@ public:
         }
 
         shot.draw();
-    };
+    }
 
     //takes two entities and returns if they have collided 
     bool checkCollision(const Entity& a, const Entity& b) {
@@ -154,8 +184,13 @@ public:
 Game game;
 
 Entity ship(3, 0, ship_n);
-Entity shot(0, 0, '-');
-
+const int MAX_SHOTS = 4;
+Entity shots[MAX_SHOTS] = {
+    Entity(0, 0, '-'),
+    Entity(0, 0, '-'),
+    Entity(0, 0, '-'),
+    Entity(0, 0, '-')
+};
 //U for top spawning astroid, D for bottom spawning astroid
 Entity Uastroid(10,0,astroid_n);
 Entity Dastroid(10,1,astroid_n);
@@ -163,11 +198,17 @@ Entity Dastroid(10,1,astroid_n);
 // ---------------- FUNCTIONS ----------------
 
 void fireShot() {
-    if (!shot.active) {
-        shot.x = ship.x + 1;
-        shot.y = ship.y;
-        shot.active = true;
-        shot.draw();
+    if (game.ammo <= 0) return;
+
+    for (int i = 0; i < MAX_SHOTS; i++) {
+        if (!shots[i].active) {
+            game.useAmmo();
+            shots[i].x = ship.x + 1;
+            shots[i].y = ship.y;
+            shots[i].active = true;
+            shots[i].draw();
+            break;  // only fire one shot per press
+        }
     }
 }
 
@@ -207,9 +248,13 @@ void initialise_game() {
     lcd.writeCustomCharacter(heartChar, heart_n + 1);
     lcd.writeCustomCharacter(astroidChar, astroid_n + 1);
     lcd.writeCustomCharacter(borderChar, border_n + 1);
+    lcd.writeCustomCharacter(ammoChar, ammo_n+1);
 
     lcd.cls();
-    shot.active = false;
+
+    for (int i = 0; i < MAX_SHOTS; i++) {
+    shots[i].active = false;
+}
     ship.draw();
     //draws borders, score, health
     game.drawHUD();
@@ -228,21 +273,30 @@ void handleInput() {
     if (Lbtn.read() == 0) {
         fireShot();
         WaitForRelease();
-        // TODO: add shot logic here later
- 
-
-        WaitForRelease();
     }
 }
 
 void updateGame() {
-    if (shot.active && shotTimer.elapsed_time() >= 150ms) {
-        game.updateShot(shot);
-        shotTimer.reset();}
-        
+    if (shotTimer.elapsed_time() >= 150ms) {
+        for (int i = 0; i < MAX_SHOTS; i++) {
+            if (shots[i].active) {
+                game.updateShot(shots[i]);
+            }
+        }
+    shotTimer.reset();
+
+    // timed ammo regen
+    if (game.ammo < 4 && ammoTimer.elapsed_time() >= AMMO_REGEN_DELAY) {
+        game.ammo++;
+        game.displayAmmo();
+        ammoTimer.reset();
+    }
+}
+
     // TODO:
-    // - move asteroids
-    // - generate questions/answers
+    // - move asteroids and handle astroid collisions 
+    // - create a ammo regen timed function 
+    // - generate questions/answers + add correct answer logic 
 }
 
 
@@ -252,12 +306,13 @@ void updateGame() {
 int main() {
     menu();
     initialise_game();
+
     shotTimer.start();
+    ammoTimer.start();
 
     while (true) {
         handleInput();
         updateGame();
-
         thread_sleep_for(10);
     }
 }
