@@ -83,6 +83,7 @@ public:
 };
 
 class Game {
+
 public:
     int lives = 3;
     int score = 0;
@@ -129,13 +130,12 @@ public:
 
     void displayScore() {
         lcd.locate(0, 1);
-        lcd.printf("S%d ", score);  
+        lcd.printf("%d", score);  
     }
 
     void drawHUD(){
         //display score
-        lcd.locate(0, 1);
-        lcd.printf("S%d ", score);  
+        displayScore();  
 
         //display health
         lcd.locate(0, 0);
