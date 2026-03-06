@@ -4,9 +4,7 @@
 
 - Pin 1 → GND
 - Pin 2 → 5V
-- Pin 3 → Potentiometer middle pin
-  - Left pin → GND
-  - Right pin → 5V
+- Pin 3 → 3k resistor → GND
 - Pin 4 → Nucleo D1
 - Pin 5 → GND
 - Pin 6 → Nucleo D2
